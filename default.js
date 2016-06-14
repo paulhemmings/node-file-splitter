@@ -4,7 +4,6 @@
 // basis for this example
 // http://stackoverflow.com/questions/6156501/read-a-file-one-line-at-a-time-in-node-js
 
-var Promise = require('node-promise').Promise;
 var fs = require('fs');
 
 // get arguments (source file and number of files to be generated)
@@ -52,7 +51,7 @@ function openHandler(fd) {
   // read a line
 
   var lineReader = require('readline').createInterface({
-      input: require('fs').createReadStream(sourceFile)
+      input: fs.createReadStream(sourceFile)
   });
 
   lineReader.on('line', function (line) {
@@ -66,6 +65,10 @@ function openHandler(fd) {
           console.log('Line from file: ', line);
           console.log('write to file: ', counter);
       }
+
+      // manage a pipe delimited list of text to replace
+      // replace-this:with-this|and-this:with-this-as-well
+      // example:: "\\\\:'|\":'"
 
       if (replaceOn) {
           replaceOn.split('|').forEach(function(replaceField) {
