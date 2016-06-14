@@ -16,7 +16,8 @@ if (args.length < 2) {
 
 var fileCount = args[1];
 var sourceFile = args[0];
-var debugOn = args.length > 2 ? args[2] : false;
+var replaceOn = args.length > 2 ? args[2] : null;
+var debugOn = args.length > 3 ? args[3] : false;
 var waitingCount = fileCount;
 var firstLine = null;
 var fileStreams = [];
@@ -25,38 +26,23 @@ var fileParts = sourceFile.split(/[. ]+/);
 var fileExtension = sourceFile.split(/[. ]+/).pop();
 
 // tell the user what is happening
+
 console.log('splitting ' + sourceFile + ' into ' + fileCount + ' ' + fileExtension + ' files');
+if (debugOn) console.log('with debug on');
+if (replaceOn != null) console.log('replacing on: ' + replaceOn);
 
 // create that many promises and streams
 
 for (var count = 0; count < fileCount; count++) {
 
     fileStreams.push({
-      index : count,
-      promise : new Promise(),
-      stream : null,
+      stream : fs.createWriteStream("./" + fileParts[0] + "-" + count + '.' + fileExtension).once('open', openHandler),
       wroteHeader : false
     });
 
-    fileStreams[count].stream = fs.createWriteStream("./" + fileParts[0] + "-" + count + '.' + fileExtension);
-    fileStreams[count].stream.once('open', curry(openHandler, count));
-
 }
 
-function curry(fun, a) {
-    return function (b) {
-        fun(a,b);
-    }
-}
-
-function openHandler(count , fd) {
-    fileStreams[count].promise.resolve (fileStreams[count].stream);
-    fileStreams[count].promise.then(handleStream);
-}
-
-// when the source file is open
-
-function handleStream(stream) {
+function openHandler(fd) {
 
   waitingCount--;
   if (waitingCount > 0) {
@@ -79,6 +65,13 @@ function handleStream(stream) {
       if (debugOn) {
           console.log('Line from file: ', line);
           console.log('write to file: ', counter);
+      }
+
+      if (replaceOn) {
+          replaceOn.split('|').forEach(function(replaceField) {
+              var replaceValues = replaceField.split(':');
+              line = line.replace(new RegExp(replaceValues[0], 'g'), replaceValues[1]);
+          });
       }
 
       if (!fileStreams[counter].wroteHeader) {
