@@ -5,6 +5,7 @@
 // http://stackoverflow.com/questions/6156501/read-a-file-one-line-at-a-time-in-node-js
 
 var fs = require('fs');
+var path = require('path');
 
 // get arguments (source file and number of files to be generated)
 
@@ -21,12 +22,11 @@ var waitingCount = fileCount;
 var firstLine = null;
 var fileStreams = [];
 var counter = 0;
-var fileParts = sourceFile.split(/[. ]+/);
-var fileExtension = sourceFile.split(/[. ]+/).pop();
+var sourcePathParts = path.parse(sourceFile);
 
 // tell the user what is happening
 
-console.log('splitting ' + sourceFile + ' into ' + fileCount + ' ' + fileExtension + ' files');
+console.log('splitting ' + sourcePathParts.name + ' into ' + fileCount + ' ' + sourcePathParts.ext + ' files');
 if (debugOn) console.log('with debug on');
 if (replaceOn != null) console.log('replacing on: ' + replaceOn);
 
@@ -35,7 +35,7 @@ if (replaceOn != null) console.log('replacing on: ' + replaceOn);
 for (var count = 0; count < fileCount; count++) {
 
     fileStreams.push({
-      stream : fs.createWriteStream("./" + fileParts[0] + "-" + count + '.' + fileExtension).once('open', openHandler),
+      stream : fs.createWriteStream(path.join(sourcePathParts.dir, sourcePathParts.name + "-" + count + sourcePathParts.ext)).once('open', openHandler),
       wroteHeader : false
     });
 
