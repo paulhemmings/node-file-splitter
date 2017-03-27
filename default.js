@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 // to enter source file in command line
 // https://nodejs.org/api/readline.html
 

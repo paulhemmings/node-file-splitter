@@ -1,18 +1,21 @@
 {
-  "name": "file-splitter",
-  "version": "1.0.0",
-  "description": "split a file",
-  "main": "default.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "file",
-    "splitter"
-  ],
-  "author": "paulhemmings",
-  "license": "ISC",
-  "dependencies": {
-    "node-promise": "^0.5.12"
-  }
+    "name": "file-splitter",
+    "version": "1.0.0",
+    "description": "split a file",
+    "main": "default.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "file",
+        "splitter"
+    ],
+    "author": "paulhemmings",
+    "license": "ISC",
+    "dependencies": {
+        "node-promise": "^0.5.12"
+    },
+    "bin" : {
+        "file-splitter" : "default.js"
+    }
 }
