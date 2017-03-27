@@ -13,7 +13,7 @@ var path = require('path');
 
 var args = process.argv.slice(2);
 if (args.length < 2) {
-    return console.log('usage :: node default.js [source file] [number of files to generate]');
+    return console.log('usage :: file-splitter [source file] [number of files to generate]');
 }
 
 var fileCount = args[1];
