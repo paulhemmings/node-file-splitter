@@ -6,25 +6,22 @@
 // basis for this example
 // http://stackoverflow.com/questions/6156501/read-a-file-one-line-at-a-time-in-node-js
 
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs');
+const path = require('path');
 
 // get arguments (source file and number of files to be generated)
 
-var args = process.argv.slice(2);
+const args = process.argv.slice(2);
 if (args.length < 2) {
     return console.log('usage :: file-splitter [source file] [number of files to generate]');
 }
 
-var fileCount = args[1];
-var sourceFile = args[0];
-var replaceOn = args.length > 2 ? args[2] : null;
-var debugOn = args.length > 3 ? args[3] : false;
-var waitingCount = fileCount;
-var firstLine = null;
-var fileStreams = [];
-var counter = 0;
-var sourcePathParts = path.parse(sourceFile);
+const sourceFile = args[0];
+const fileCount = args[1];
+
+const replaceOn = args.length > 2 ? args[2] : null;
+const debugOn = args.length > 3 ? args[3] : false;
+const sourcePathParts = path.parse(sourceFile);
 
 // tell the user what is happening
 
@@ -32,72 +29,64 @@ console.log('splitting ' + sourcePathParts.name + ' into ' + fileCount + ' ' + s
 if (debugOn) console.log('with debug on');
 if (replaceOn != null) console.log('replacing on: ' + replaceOn);
 
-// create that many promises and streams
+// function to process the input fileCount
 
-for (var count = 0; count < fileCount; count++) {
+const processSourceFile = function(soucePath, streamArray) {
+    var firstLine = null;
+    var counter = 0;
+    require('readline').createInterface({
+        input: fs.createReadStream(soucePath)
+    })
+    .on('line', function (line) {
 
-    fileStreams.push({
-      stream : fs.createWriteStream(path.join(sourcePathParts.dir, sourcePathParts.name + "-" + count + sourcePathParts.ext)).once('open', openHandler),
-      wroteHeader : false
+        if (firstLine == null) {
+            firstLine = line;
+            return;
+        }
+
+        if (debugOn) {
+            console.log('Line from file: ', line);
+            console.log('write to file: ', counter);
+        }
+
+        if (!streamArray[counter].wroteHeader) {
+            streamArray[counter].wroteHeader = true;
+            streamArray[counter].stream.write(firstLine + "\r\n");
+        }
+        streamArray[counter].stream.write(line + "\r\n");
+
+        counter++;
+        if (counter > streamArray.length-1) {
+            counter = 0;
+        }
+
+    })
+    .on('close', function() {
+        for (var count = 0; count < fileCount; count++) {
+            streamArray[count].stream.end();
+        }
+        console.log('finished');
     });
-
 }
 
-function openHandler(fd) {
+// build the handler for the new open write stream
+// if all streams now open, process source file.
 
-  waitingCount--;
-  if (waitingCount > 0) {
-      return;
-  }
+const buildOpenHandler = function(allOpen, sp, sa) {
+    return function(fd) {
+        if (allOpen) {
+            processSourceFile(sp, sa);
+        }
+    }
+}
 
-  // read a line
+// create that many streams.
 
-  var lineReader = require('readline').createInterface({
-      input: fs.createReadStream(sourceFile)
-  });
-
-  lineReader.on('line', function (line) {
-
-      if (firstLine == null) {
-          firstLine = line;
-          return;
-      }
-
-      if (debugOn) {
-          console.log('Line from file: ', line);
-          console.log('write to file: ', counter);
-      }
-
-      // manage a pipe delimited list of text to replace
-      // replace-this:with-this|and-this:with-this-as-well
-      // example:: "\\\\:'|\":'"
-
-      if (replaceOn) {
-          replaceOn.split('|').forEach(function(replaceField) {
-              var replaceValues = replaceField.split(':');
-              line = line.replace(new RegExp(replaceValues[0], 'g'), replaceValues[1]);
-          });
-      }
-
-      if (!fileStreams[counter].wroteHeader) {
-          fileStreams[counter].wroteHeader = true;
-          fileStreams[counter].stream.write(firstLine + "\r\n");
-      }
-
-      fileStreams[counter].stream.write(line + "\r\n");
-
-      counter++;
-      if (counter > fileCount-1) {
-         counter = 0;
-      }
-
-  });
-
-  lineReader.on('close', function() {
-      for (var count = 0; count < fileCount; count++) {
-          fileStreams[count].stream.end();
-      }
-      console.log('finished');
-  })
-
-};
+var fileStreams = [];
+for (var count = 0; count < fileCount; count++) {
+    var destinationFilePath = path.join(sourcePathParts.dir, sourcePathParts.name + "-" + count + sourcePathParts.ext);
+    fileStreams.push({
+      stream : fs.createWriteStream(destinationFilePath).once('open', buildOpenHandler(count == fileCount-1, sourceFile, fileStreams) ),
+      wroteHeader : false
+    });
+}
